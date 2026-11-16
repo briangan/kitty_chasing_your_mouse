@@ -17,7 +17,7 @@ This is an experimental utility for fun, so you are free to [download for person
 Are you sure you want to open it?
 ```
 
-After launch, a kitty icon will appear at top in your menu icons area.  That has the menu command to Quit.
+After launch, a kitty icon will appear at top in your menu icons area.  That has the menu command to Quit.  And it has command to Call the Kitty too.
 
 
 -------------------------------------
@@ -34,8 +34,9 @@ Create a Mac app that adds animated 2D icon of a cat following the mouse pointer
 Initially there was no reference graphics or design of the cat was given.
 
 ### Result:
-* That cat drawn by Swift code is not bad.  
-
+* That cat drawn by Swift code is not bad.
+* In running mode, the limbs towards the viewer's side are still behind the body instead of being in front.
+* In waiting stance, the limbs stick out, and back legs are not so distinctly recognizable.  The body too long, thus, too tall.
 
 ------------------------------------
 

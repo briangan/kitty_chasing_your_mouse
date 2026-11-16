@@ -1,14 +1,16 @@
-// CatChaser.swift
-// A tiny animated 2D cat that lives on top of your desktop and chases the mouse pointer.
+// KittyChasingYourMouse.swift
+// A tiny animated 2D kitty that lives on top of your desktop and chases the mouse pointer.
 //
 //  - Runs after the pointer while it is moving and catches it.
 //  - On catch: bites the pointer, holds it in its mouth for 3 seconds, then fades away.
-//  - If the pointer is idle for 60s+, the cat curls up and naps next to it.
-//  - The cat comes back a few seconds after it vanishes.
+//  - If the pointer is idle for 60s+, the kitty curls up and naps next to it.
+//  - The kitty comes back a few seconds after it vanishes.
 //
 // Build:  ./build.sh      (needs Xcode command line tools)
 
 import Cocoa
+
+let VERSION : NSString = "0.1.1"
 
 // MARK: - Palette & geometry
 
@@ -19,11 +21,11 @@ private let outline  = NSColor(srgbRed: 0.30, green: 0.15, blue: 0.06, alpha: 1)
 private let pink     = NSColor(srgbRed: 1.00, green: 0.55, blue: 0.62, alpha: 1)
 private let eyeGreen = NSColor(srgbRed: 0.35, green: 0.78, blue: 0.40, alpha: 1)
 
-/// Size of the (transparent, click-through) window that carries the cat sprite.
+/// Size of the (transparent, click-through) window that carries the kitty sprite.
 private let spriteSize = CGSize(width: 140, height: 110)
-/// The cat's "position" is the point between its feet; this is where that sits inside the sprite.
+/// The kitty's "position" is the point between its feet; this is where that sits inside the sprite.
 private let feetAnchor = CGPoint(x: 70, y: 14)
-/// Where the mouth is, relative to the feet, when the cat faces right.
+/// Where the mouth is, relative to the feet, when the kitty faces right.
 private let mouthRel = CGPoint(x: 35, y: 26)
 
 // MARK: - Drawing helpers
@@ -211,11 +213,11 @@ private func drawHead(_ ctx: CGContext, at c: CGPoint, tilt: CGFloat, eyes: Eyes
     ctx.restoreGState()
 }
 
-// MARK: - Cat view
+// MARK: - kitty view
 
 enum Pose { case run, hold, sit, sleep }
 
-final class CatView: NSView {
+final class KittyView: NSView {
     var pose: Pose = .sit
     var facing: CGFloat = 1          // +1 = right, -1 = left
     var phase: CGFloat = 0           // run-cycle phase
@@ -304,7 +306,7 @@ final class CatView: NSView {
         blob(ctx, CGPoint(x: 52, y: 28), 20, 15, fill: fur)                  // haunch
         blob(ctx, CGPoint(x: 64, y: 46), 16, 26, angle: -0.12, fill: fur)    // torso
         blob(ctx, CGPoint(x: 73, y: 44), 8, 17, fill: cream, stroke: false)  // chest
-        for x: CGFloat in [74, 83] {                                         // front legs
+        for x: CGFloat in [67, 76] {                                         // front legs
             limb(CGPoint(x: x, y: 36), CGPoint(x: x, y: 17), width: 6.5, color: fur)
             blob(ctx, CGPoint(x: x, y: 15), 5.2, 3.6, fill: cream)
         }
@@ -355,18 +357,18 @@ final class CatView: NSView {
 
 // MARK: - Behaviour
 
-final class CatController: NSObject {
+final class KittyController: NSObject {
     private enum State { case gone, chasing, goingToNap, sleeping, waking, biting, fading }
 
     private let window: NSWindow
-    private let view: CatView
+    private let view: KittyView
     private var timer: Timer?
 
     private var state: State = .gone
     private var stateStart = CACurrentMediaTime()
     private var respawnDelay: Double = 1.0
 
-    private var pos = CGPoint.zero            // between the cat's feet, global Cocoa coordinates
+    private var pos = CGPoint.zero            // between the kitty's feet, global Cocoa coordinates
     private var vel = CGPoint.zero
     private var facing: CGFloat = 1
     private var alpha: CGFloat = 1
@@ -378,11 +380,11 @@ final class CatController: NSObject {
     private var lastMoveTime = CACurrentMediaTime()
     private var cursorHeld = false
 
-    /// When true, the real pointer is frozen in the cat's mouth during the 3-second hold.
+    /// When true, the real pointer is frozen in the kitty's mouth during the 3-second hold.
     var freezeCursor = true
 
     override init() {
-        let v = CatView(frame: NSRect(origin: .zero, size: spriteSize))
+        let v = KittyView(frame: NSRect(origin: .zero, size: spriteSize))
         let w = NSWindow(contentRect: v.frame, styleMask: .borderless, backing: .buffered, defer: false)
         w.contentView = v
         w.isOpaque = false
@@ -403,7 +405,7 @@ final class CatController: NSObject {
 
     // MARK: Public
 
-    func callCat() {
+    func callKitty() {
         guard state == .gone || state == .fading else { return }
         releaseCursor()
         spawn(near: NSEvent.mouseLocation)
@@ -592,19 +594,23 @@ final class CatController: NSObject {
 // MARK: - App
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    private var cat: CatController!
+    private var kitty: KittyController!
     private var statusItem: NSStatusItem!
     private var freezeItem: NSMenuItem!
     private var signalSources: [DispatchSourceSignal] = []
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        cat = CatController()
+        kitty = KittyController()
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         statusItem.button?.title = "🐱"
 
         let menu = NSMenu()
-        let call = NSMenuItem(title: "Call the Cat", action: #selector(callCat), keyEquivalent: "")
+
+        let aboutVersion = NSMenuItem(title: "Version \(VERSION)", action: nil, keyEquivalent: "")
+        menu.addItem(aboutVersion)
+
+        let call = NSMenuItem(title: "Call the Kitty", action: #selector(callKitty), keyEquivalent: "")
         call.target = self
         menu.addItem(call)
 
@@ -615,7 +621,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(freezeItem)
 
         menu.addItem(.separator())
-        let quit = NSMenuItem(title: "Quit Cat Chaser", action: #selector(quit), keyEquivalent: "q")
+        let quit = NSMenuItem(title: "Quit Kitty Chasing Your Mouse", action: #selector(quit), keyEquivalent: "q")
         quit.target = self
         menu.addItem(quit)
         statusItem.menu = menu
@@ -637,15 +643,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         _ = CGAssociateMouseAndMouseCursorPosition(1)
     }
 
-    @objc private func callCat() { cat.callCat() }
+    @objc private func callKitty() { kitty.callKitty() }
 
     @objc private func toggleFreeze() {
-        cat.freezeCursor.toggle()
-        freezeItem.state = cat.freezeCursor ? .on : .off
+        kitty.freezeCursor.toggle()
+        freezeItem.state = kitty.freezeCursor ? .on : .off
     }
 
     @objc private func quit() {
-        cat.releaseCursor()
+        kitty.releaseCursor()
         NSApp.terminate(nil)
     }
 }
