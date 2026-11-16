@@ -48,7 +48,7 @@ Change the look of the cat to this in image, and change each stance/position dra
 ```
 
 ### Result
-* Much cuter kitty.  For now using [the orange one](kawaii-cat-flat-icon-orange-only.png).
+* Much cuter kitty.  For now using [the orange one](images/kawaii-cat-flat-icon-orange-only.png).
 
 ------------------------------------
 

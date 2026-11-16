@@ -13,6 +13,8 @@
 
 import Cocoa
 
+private let VERSION = "0.2"
+
 // MARK: - Palette & geometry
 
 private let ink      = NSColor(srgbRed: 0.255, green: 0.200, blue: 0.247, alpha: 1)   // outline / eyes
@@ -322,11 +324,11 @@ private func drawHead(_ ctx: CGContext, at c: CGPoint, tilt: CGFloat, eyes: Eyes
     ctx.restoreGState()
 }
 
-// MARK: - Cat view
+// MARK: - Kitty view
 
 enum Pose { case run, hold, sit, sleep }
 
-final class CatView: NSView {
+final class KittyView: NSView {
     var pose: Pose = .sit
     var facing: CGFloat = 1          // +1 = right, -1 = left
     var phase: CGFloat = 0           // run-cycle phase
@@ -505,7 +507,7 @@ final class CatController: NSObject {
     private enum State { case gone, chasing, goingToNap, sleeping, waking, biting, fading }
 
     private let window: NSWindow
-    private let view: CatView
+    private let view: KittyView
     private var timer: Timer?
 
     private var state: State = .gone
@@ -528,7 +530,7 @@ final class CatController: NSObject {
     var freezeCursor = true
 
     override init() {
-        let v = CatView(frame: NSRect(origin: .zero, size: spriteSize))
+        let v = KittyView(frame: NSRect(origin: .zero, size: spriteSize))
         let w = NSWindow(contentRect: v.frame, styleMask: .borderless, backing: .buffered, defer: false)
         w.contentView = v
         w.isOpaque = false
@@ -750,7 +752,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem.button?.title = "🐱"
 
         let menu = NSMenu()
-        let call = NSMenuItem(title: "Call the Cat", action: #selector(callCat), keyEquivalent: "")
+        let aboutVersion = NSMenuItem(title: "Version \(VERSION)", action: nil, keyEquivalent: "")
+        menu.addItem(aboutVersion)
+
+        let call = NSMenuItem(title: "Call the Kitty", action: #selector(callCat), keyEquivalent: "")
         call.target = self
         menu.addItem(call)
 
@@ -761,7 +766,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(freezeItem)
 
         menu.addItem(.separator())
-        let quit = NSMenuItem(title: "Quit Cat Chaser", action: #selector(quit), keyEquivalent: "q")
+        let quit = NSMenuItem(title: "Quit Kitty Chaser", action: #selector(quit), keyEquivalent: "q")
         quit.target = self
         menu.addItem(quit)
         statusItem.menu = menu
