@@ -24,7 +24,7 @@ After launch, a kitty icon will appear at top in your menu icons area.  That has
 
 # Steps of Using AI for Development
 
-## Initial version
+## Version 0.1 - 2026/11/16 12PM EST
 ### Preparation
 Prompt given to Claude Code Sonnet 5.5:
 ```
@@ -38,15 +38,33 @@ Initially there was no reference graphics or design of the cat was given.
 * In running mode, the limbs towards the viewer's side are still behind the body instead of being in front.
 * In waiting stance, the limbs stick out, and back legs are not so distinctly recognizable.  The body too long, thus, too tall.
 
+## Version 0.2 - 2026/11/16 4:30PM EST
+### Preparation
+Downloaded sample cute cat icon from [Vecteezy T-shirt Pond](https://www.vecteezy.com/vector-art/25805998-kawaii-cat-flat-icon-vector-cute-cat-flat-illustration-cute-kawaii-cat-flat-illustration-art-icons-and-graphics).
+
+Prompt:
+```
+Change the look of the cat to this in image, and change each stance/position draw function accordingly.
+```
+
+### Result
+* Much cuter kitty.  For now using [the orange one](kawaii-cat-flat-icon-orange-only.png).
+
 ------------------------------------
 
 
-# More Features
+# Features
+
+## Completed
+* [x] Initial app with animations.
+* [x] Change to cuter kitty.
 
 ## Incoming
-* Change the icon to to a cuter kitty.
+* After finishing biting, change to sitting position.
 
 ## Future Ideas
+* While in waiting, scrubbing the mouse pointer left and right 3 times would pet it to howl joyfully upwards slightly.
+* While in eating or waiting or sleeping position, click on the kitty fades it away. 
 * Swithable colors of the kitty.
 
 ## Your Suggestions
