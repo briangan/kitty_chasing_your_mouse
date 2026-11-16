@@ -1,10 +1,12 @@
-// KittyChasingYourMouse.swift
+// KittyChasingYourMouse.swift  —  "Kitty Chasing Your Mouse"
 // A tiny animated 2D kitty that lives on top of your desktop and chases the mouse pointer.
 //
 //  - Runs after the pointer while it is moving and catches it.
-//  - On catch: bites the pointer, holds it in its mouth for 3 seconds, then fades away.
+//  - On catch: bites the pointer, holds it in its mouth for 3 seconds, then sits down and waits.
+//  - While it waits, scrub the pointer left and right 3 times over it to pet it: it howls joyfully.
+//  - Click the kitty while it is eating, waiting or sleeping and it fades away.
 //  - If the pointer is idle for 60s+, the kitty curls up and naps next to it.
-//  - The kitty comes back a few seconds after it vanishes.
+//  - The kitty comes back a few seconds after it fades away.
 //
 // Art style: white kitty, peach patches, big round eyes, soft blue-grey shading, dark plum outline.
 // Everything is drawn in code, in "cat units" (origin = between the kitty's feet, 1 unit ≈ 1.25 px).
@@ -13,7 +15,8 @@
 
 import Cocoa
 
-private let VERSION = "0.2"
+private let VERSION = "0.3"
+private let APP_NAME = "Kitty Chasing Your Mouse"
 
 // MARK: - Palette & geometry
 
@@ -148,7 +151,7 @@ private func drawStripedTail(_ ctx: CGContext, _ cu: Cubic, width w: CGFloat) {
 /// The kawaii head. Centre of the head is `c`; the mouth is 9.2 units below it, and
 /// when `pointer` is true the captured mouse pointer's tip sits exactly there.
 private func drawHead(_ ctx: CGContext, at c: CGPoint, tilt: CGFloat, eyes: Eyes,
-                      mouthOpen: CGFloat, pointer: Bool, fangs: Bool) {
+                      mouthOpen: CGFloat, pointer: Bool, fangs: Bool, lookUp: CGFloat = 0) {
     ctx.saveGState()
     ctx.translateBy(x: c.x, y: c.y)
     ctx.rotate(by: tilt)
@@ -229,6 +232,9 @@ private func drawHead(_ ctx: CGContext, at c: CGPoint, tilt: CGFloat, eyes: Eyes
         inner.fill()
         inkStroke(inner, 0.9)
     }
+
+    // Head tipped back (howling): the face slides up toward the ears
+    ctx.translateBy(x: 0, y: lookUp * 3.2)
 
     // Eyes
     for ex: CGFloat in [-10.8, 10.8] {
@@ -336,9 +342,14 @@ final class KittyView: NSView {
     var gait: CGFloat = 1            // 0…1 leg swing amplitude
     var mouthOpen: CGFloat = 0
     var showPointer = false
+    var lookUp: CGFloat = 0          // 0…1, head tipped back for the happy howl
+    var petting = false              // shows floating hearts
+    var onClick: (() -> Void)?
 
     override var isFlipped: Bool { false }
     override var isOpaque: Bool { false }
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+    override func mouseDown(with event: NSEvent) { onClick?() }
 
     override func draw(_ dirtyRect: NSRect) {
         guard let ctx = NSGraphicsContext.current?.cgContext else { return }
@@ -357,6 +368,7 @@ final class KittyView: NSView {
         }
         ctx.restoreGState()
         if pose == .sleep { drawZs() }
+        if petting { drawHearts() }
     }
 
     // MARK: Running / walking / standing with the pointer in its mouth
@@ -457,8 +469,8 @@ final class KittyView: NSView {
         // Head
         let blink = time.truncatingRemainder(dividingBy: 3.4) > 3.25
         let eyes: Eyes = mouthOpen > 0.3 ? .happy : (blink ? .sleepy : .open)
-        drawHead(ctx, at: P(0, 41), tilt: sin(time * 0.9) * 0.05,
-                 eyes: eyes, mouthOpen: mouthOpen, pointer: false, fangs: false)
+        drawHead(ctx, at: P(0, 41 + lookUp * 1.5), tilt: sin(time * 0.9) * 0.05 * (1 - lookUp),
+                 eyes: eyes, mouthOpen: mouthOpen, pointer: false, fangs: false, lookUp: lookUp)
     }
 
     // MARK: Curled up asleep
@@ -499,12 +511,37 @@ final class KittyView: NSView {
             ("Z" as NSString).draw(at: NSPoint(x: x, y: y), withAttributes: attrs)
         }
     }
+
+    // Floating hearts while being petted (drawn unmirrored, in sprite coordinates)
+    private func drawHearts() {
+        let xs: [CGFloat] = [-26, 22, -8, 34]
+        for i in 0..<4 {
+            let t = (time * 0.8 + CGFloat(i) * 0.25).truncatingRemainder(dividingBy: 1)
+            let cx = bounds.width / 2 + xs[i] + sin(time * 4 + CGFloat(i)) * 3
+            let cy = 92 + t * 38
+            let s = 3.5 + 1.5 * CGFloat(i % 2)
+            let h = NSBezierPath()
+            h.move(to: P(cx, cy - s))
+            h.curve(to: P(cx - s, cy + s * 0.25), controlPoint1: P(cx - s * 0.5, cy - s * 0.55), controlPoint2: P(cx - s, cy - s * 0.2))
+            h.curve(to: P(cx, cy + s * 0.45),     controlPoint1: P(cx - s, cy + s * 0.95),       controlPoint2: P(cx - s * 0.15, cy + s * 0.95))
+            h.curve(to: P(cx + s, cy + s * 0.25), controlPoint1: P(cx + s * 0.15, cy + s * 0.95), controlPoint2: P(cx + s, cy + s * 0.95))
+            h.curve(to: P(cx, cy - s),            controlPoint1: P(cx + s, cy - s * 0.2),        controlPoint2: P(cx + s * 0.5, cy - s * 0.55))
+            h.close()
+            let a = sin(t * .pi)
+            NSColor(srgbRed: 1.0, green: 0.42, blue: 0.56, alpha: a).setFill()
+            h.fill()
+            ink.withAlphaComponent(a).setStroke()
+            h.lineWidth = 0.9
+            h.lineJoinStyle = .round
+            h.stroke()
+        }
+    }
 }
 
 // MARK: - Behaviour
 
-final class CatController: NSObject {
-    private enum State { case gone, chasing, goingToNap, sleeping, waking, biting, fading }
+final class KittyController: NSObject {
+    private enum State { case gone, chasing, goingToNap, sleeping, waking, biting, petting, fading }
 
     private let window: NSWindow
     private let view: KittyView
@@ -518,8 +555,18 @@ final class CatController: NSObject {
     private var vel = CGPoint.zero
     private var facing: CGFloat = 1
     private var alpha: CGFloat = 1
-    private var sitting = false
+    private var sitting = false               // true while the kitty is seated and waiting
+    private var sitInPlace = false            // sit right where it is instead of walking to a spot
     private var napSide: CGFloat = 1
+    private var noChaseUntil: Double = 0      // short pause after biting / petting before chasing again
+
+    // Petting: scrub the pointer left-right over the seated kitty
+    private var scrubDir: CGFloat = 0
+    private var scrubExtreme: CGFloat = 0
+    private var scrubReversals = 0
+    private var scrubActive: Double = 0
+    private let petReversalsNeeded = 5        // 5 direction changes = 3 full left-right scrubs
+    private let petSweepDistance: CGFloat = 20
 
     private var lastTick = CACurrentMediaTime()
     private var lastPointer = NSEvent.mouseLocation
@@ -531,18 +578,25 @@ final class CatController: NSObject {
 
     override init() {
         let v = KittyView(frame: NSRect(origin: .zero, size: spriteSize))
-        let w = NSWindow(contentRect: v.frame, styleMask: .borderless, backing: .buffered, defer: false)
+        // A non-activating panel lets you click the kitty without stealing focus from your app.
+        let w = NSPanel(contentRect: v.frame, styleMask: [.borderless, .nonactivatingPanel],
+                        backing: .buffered, defer: false)
         w.contentView = v
         w.isOpaque = false
         w.backgroundColor = .clear
         w.hasShadow = false
-        w.ignoresMouseEvents = true
+        w.ignoresMouseEvents = true           // switched off only while the pointer is over a clickable kitty
         w.level = .screenSaver
+        w.isFloatingPanel = true
+        w.hidesOnDeactivate = false
+        w.becomesKeyOnlyIfNeeded = true
         w.isReleasedWhenClosed = false
         w.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
         view = v
         window = w
         super.init()
+
+        v.onClick = { [weak self] in self?.kittyClicked() }
 
         let t = Timer(timeInterval: 1.0 / 60.0, repeats: true) { [weak self] _ in self?.tick() }
         RunLoop.main.add(t, forMode: .common)
@@ -551,7 +605,7 @@ final class CatController: NSObject {
 
     // MARK: Public
 
-    func callCat() {
+    func callKitty() {
         guard state == .gone || state == .fading else { return }
         releaseCursor()
         spawn(near: NSEvent.mouseLocation)
@@ -582,7 +636,12 @@ final class CatController: NSObject {
         alpha = 1
         facing = fromLeft ? 1 : -1
         sitting = false
+        sitInPlace = false
+        noChaseUntil = 0
+        resetScrub(ptr.x)
         view.mouthOpen = 0
+        view.lookUp = 0
+        view.petting = false
         view.showPointer = false
         window.alphaValue = 1
         window.orderFrontRegardless()
@@ -612,12 +671,88 @@ final class CatController: NSObject {
         // Lunge so the mouth is exactly on the pointer
         pos = CGPoint(x: ptr.x - facing * mouthRel.x, y: ptr.y - mouthRel.y)
         vel = .zero
+        sitting = false
+        sitInPlace = false
         view.showPointer = true
         if freezeCursor {
             _ = CGAssociateMouseAndMouseCursorPosition(0)   // pointer stops obeying the mouse
             cursorHeld = true
         }
         enter(.biting)
+    }
+
+    // MARK: Clicking
+
+    /// Rect (screen coordinates) the seated kitty occupies. Also the area where petting works.
+    private func seatedRect() -> CGRect {
+        CGRect(x: pos.x - 40, y: pos.y - 4, width: 80, height: 88)
+    }
+
+    /// Rect covered by the kitty in its current pose.
+    private func bodyRect() -> CGRect {
+        let s = unitScale
+        switch view.pose {
+        case .sit:
+            return seatedRect()
+        case .sleep:
+            let x0 = -36 * s, x1 = 46 * s
+            let lo = facing > 0 ? x0 : -x1
+            return CGRect(x: pos.x + lo, y: pos.y - 6, width: x1 - x0, height: 46 * s)
+        case .run, .hold:
+            let x0 = -40 * s, x1 = 42 * s
+            let lo = facing > 0 ? x0 : -x1
+            return CGRect(x: pos.x + lo, y: pos.y - 4, width: x1 - x0, height: 62 * s)
+        }
+    }
+
+    /// Clicking the kitty only does something while it is eating, waiting, being petted or sleeping.
+    private var isClickable: Bool {
+        switch state {
+        case .biting, .sleeping, .waking, .petting: return true
+        case .chasing: return sitting
+        default: return false
+        }
+    }
+
+    private func kittyClicked() {
+        guard isClickable else { return }
+        releaseCursor()
+        lastPointer = NSEvent.mouseLocation
+        lastMoveTime = CACurrentMediaTime()
+        view.showPointer = false
+        view.petting = false
+        view.lookUp = 0
+        view.mouthOpen = 0
+        enter(.fading)
+    }
+
+    // MARK: Petting (scrubbing the pointer left and right over the seated kitty)
+
+    private func resetScrub(_ x: CGFloat) {
+        scrubDir = 0
+        scrubExtreme = x
+        scrubReversals = 0
+    }
+
+    private func trackScrub(_ x: CGFloat, now: Double) {
+        if scrubDir != 0 && now - scrubActive > 1.5 { resetScrub(x) }     // too slow: start over
+        if scrubDir == 0 {
+            if abs(x - scrubExtreme) > 6 {
+                scrubDir = x > scrubExtreme ? 1 : -1
+                scrubExtreme = x
+                scrubActive = now
+            }
+            return
+        }
+        if scrubDir * (x - scrubExtreme) > 0 {                 // still travelling the same way
+            scrubExtreme = x
+            scrubActive = now
+        } else if abs(x - scrubExtreme) > petSweepDistance {   // turned around: one sweep done
+            scrubDir = -scrubDir
+            scrubExtreme = x
+            scrubReversals += 1
+            scrubActive = now
+        }
     }
 
     // MARK: Main loop
@@ -644,8 +779,30 @@ final class CatController: NSObject {
 
         case .chasing:
             view.mouthOpen = 0
-            if moving {
+            view.lookUp = 0
+            view.petting = false
+
+            let onKitty = sitting && seatedRect().contains(ptr)
+            if !onKitty { resetScrub(ptr.x) }
+
+            if onKitty && idleFor < 60 {
+                // Pointer is over the waiting kitty: it can be petted, but it won't be chased.
+                vel = .zero
+                view.pose = .sit
+                trackScrub(ptr.x, now: now)
+                if scrubReversals >= petReversalsNeeded {
+                    resetScrub(ptr.x)
+                    enter(.petting)
+                    break
+                }
+            } else if now < noChaseUntil {
+                // Just finished biting/petting: sit tight for a moment.
+                vel = .zero
+                sitting = true
+                view.pose = .sit
+            } else if moving {
                 sitting = false
+                sitInPlace = false
                 if ptr.x > pos.x + 12 { facing = 1 } else if ptr.x < pos.x - 12 { facing = -1 }
                 steer(to: CGPoint(x: ptr.x - facing * mouthRel.x, y: ptr.y - mouthRel.y),
                       maxSpeed: 800, dt: dt)
@@ -657,9 +814,16 @@ final class CatController: NSObject {
                 view.pose = .run
             } else if idleFor >= 60 {
                 napSide = pos.x >= ptr.x ? 1 : -1
+                sitting = false
+                sitInPlace = false
                 enter(.goingToNap)
+            } else if sitInPlace {
+                // After a bite (or a nap) the kitty simply sits where it is and waits.
+                vel = .zero
+                sitting = true
+                view.pose = .sit
             } else {
-                // Pointer is still: wander over to a spot beside it and sit, watching.
+                // Pointer is still: wander over to a spot beside it and sit, waiting.
                 let side: CGFloat = pos.x >= ptr.x ? 1 : -1
                 let spot = CGPoint(x: ptr.x + side * 100, y: ptr.y - 20)
                 let d = hypot(spot.x - pos.x, spot.y - pos.y)
@@ -698,6 +862,8 @@ final class CatController: NSObject {
             view.mouthOpen = 0.9
             if t > 0.9 {
                 view.mouthOpen = 0
+                sitting = true
+                sitInPlace = true
                 enter(.chasing)
             }
 
@@ -706,20 +872,48 @@ final class CatController: NSObject {
             view.pose = .hold
             view.showPointer = true
             if t >= 3.0 {
+                // Done eating: let go of the pointer and sit down (no more fading away).
                 releaseCursor()
                 lastPointer = NSEvent.mouseLocation
                 lastMoveTime = now
                 view.showPointer = false
-                enter(.fading)
+                sitting = true
+                sitInPlace = true
+                noChaseUntil = now + 1.5
+                resetScrub(lastPointer.x)
+                enter(.chasing)
+            }
+
+        case .petting:
+            // Happy howl: head tips back, mouth open, hearts float up.
+            vel = .zero
+            sitting = true
+            view.pose = .sit
+            view.petting = true
+            let tt = CGFloat(t)
+            let k = min(1, tt * 4)                                  // head tips back quickly
+            let settle: CGFloat = tt > 2.2 ? max(0, 1 - (tt - 2.2) / 0.4) : 1
+            view.lookUp = k * settle
+            view.mouthOpen = (0.6 + 0.35 * sin(tt * 4)) * settle
+            if t > 2.6 {
+                view.petting = false
+                view.lookUp = 0
+                view.mouthOpen = 0
+                sitInPlace = true
+                noChaseUntil = now + 0.8
+                resetScrub(ptr.x)
+                enter(.chasing)
             }
 
         case .fading:
-            view.pose = .hold
+            // Clicked: fade away in whatever pose the kitty was in.
             view.showPointer = false
+            view.mouthOpen = 0
             alpha = max(0, 1 - CGFloat(t) / 1.2)
             pos.y += dt * 25
             if alpha <= 0 {
                 window.orderOut(nil)
+                window.ignoresMouseEvents = true
                 respawnDelay = 8
                 enter(.gone)
                 return
@@ -733,6 +927,8 @@ final class CatController: NSObject {
         view.facing = facing
         window.alphaValue = alpha
         window.setFrameOrigin(NSPoint(x: pos.x - feetAnchor.x, y: pos.y - feetAnchor.y))
+        // The window only catches clicks while the pointer is over a clickable kitty.
+        window.ignoresMouseEvents = !(isClickable && bodyRect().contains(ptr))
         view.needsDisplay = true
     }
 }
@@ -740,22 +936,22 @@ final class CatController: NSObject {
 // MARK: - App
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    private var kitty: CatController!
+    private var kitty: KittyController!
     private var statusItem: NSStatusItem!
     private var freezeItem: NSMenuItem!
     private var signalSources: [DispatchSourceSignal] = []
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        kitty = CatController()
+        kitty = KittyController()
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         statusItem.button?.title = "🐱"
 
         let menu = NSMenu()
-        let aboutVersion = NSMenuItem(title: "Version \(VERSION)", action: nil, keyEquivalent: "")
+        let aboutVersion = NSMenuItem(title: "\(APP_NAME) — Version \(VERSION)", action: nil, keyEquivalent: "")
         menu.addItem(aboutVersion)
 
-        let call = NSMenuItem(title: "Call the Kitty", action: #selector(callCat), keyEquivalent: "")
+        let call = NSMenuItem(title: "Call the Kitty", action: #selector(callKitty), keyEquivalent: "")
         call.target = self
         menu.addItem(call)
 
@@ -766,7 +962,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(freezeItem)
 
         menu.addItem(.separator())
-        let quit = NSMenuItem(title: "Quit Kitty Chaser", action: #selector(quit), keyEquivalent: "q")
+        let quit = NSMenuItem(title: "Quit \(APP_NAME)", action: #selector(quit), keyEquivalent: "q")
         quit.target = self
         menu.addItem(quit)
         statusItem.menu = menu
@@ -788,7 +984,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         _ = CGAssociateMouseAndMouseCursorPosition(1)
     }
 
-    @objc private func callCat() { kitty.callCat() }
+    @objc private func callKitty() { kitty.callKitty() }
 
     @objc private func toggleFreeze() {
         kitty.freezeCursor.toggle()
