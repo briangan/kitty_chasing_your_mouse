@@ -19,8 +19,7 @@ This is an experimental utility for fun, so you are free to [download for person
 Are you sure you want to open it?
 ```
 
-After launch, a kitty icon will appear at top in your menu icons area.  That has the menu command to Quit.  And it has command to Call the Kitty too.
-
+After launch, a kitty icon will appear at top in your control panel icons area.  That has the menu command to Quit.  And it has command to Call the Kitty too.  [See Menu](images/menu.png)
 
 -------------------------------------
 
@@ -68,6 +67,11 @@ Make the following animation and sequence changes instead.
 * Implemented petting and howling
 
 
+## Version 0.4 - 2026/11/16 11:30PM EST
+This version is entirely manual corrections and additions since the language of Swift is relatively easy to understand, 
+and AI has generated straight-forward for running the app.
+* Implemented menu item to Repawn Kitty Later, and based on that option, determine to skip respawn or recall kitty to respawn
+
 ------------------------------------
 
 
@@ -80,10 +84,18 @@ Make the following animation and sequence changes instead.
 * [x] Implemented eating to sitting
 * [x] Implemented click away
 * [x] Implemented petting and howling
+* [x] Menu item to toggle respawn kitty later
+* [x] After disappearance, call to schedule depends on flag respawnLater. 
 
 ## Incoming
+* Change hover over kitty mouse pointer to hand
 
 ## Future Ideas
+* Upon respawn, there's a little delay flicker that shows a frame of kitty at old location before showing new kitty else where.  Supposedly kept invisible.
+* Color of control panel icon changed to represent current state of respawn: green or default UI color.
+* When another launch is initiated, for instance after rebuild then launch, check if there's existing already running process and terminate it.
+* Refactor out codes to different files of front end, controller and model levels.
+* Set auto load at login.
 * Swithable colors of the kitty.
 
 ## Your Suggestions

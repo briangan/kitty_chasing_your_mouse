@@ -9,11 +9,12 @@
 //  - The kitty comes back a few seconds after it fades away.
 //
 // Art style: white kitty, peach patches, big round eyes, soft blue-grey shading, dark plum outline.
-// Everything is drawn in code, in "cat units" (origin = between the kitty's feet, 1 unit ≈ 1.25 px).
+// Everything is drawn in code, in "kitty units" (origin = between the kitty's feet, 1 unit ≈ 1.25 px).
 //
 // Build:  ./build.sh      (needs Xcode command line tools)
 
 import Cocoa
+
 
 private let VERSION = "0.3"
 private let APP_NAME = "Kitty Chasing Your Mouse"
@@ -29,7 +30,7 @@ private let shade    = NSColor(srgbRed: 0.780, green: 0.816, blue: 0.827, alpha:
 private let noseCol  = NSColor(srgbRed: 0.957, green: 0.714, blue: 0.741, alpha: 1)
 private let mouthCol = NSColor(srgbRed: 0.260, green: 0.070, blue: 0.100, alpha: 1)
 
-/// One "cat unit" is this many screen points.
+/// One "kitty unit" is this many screen points.
 private let unitScale: CGFloat = 1.25
 /// Size of the transparent, click-through window that carries the kitty sprite.
 private let spriteSize = CGSize(width: 170, height: 140)
@@ -573,6 +574,8 @@ final class KittyController: NSObject {
     private var lastMoveTime = CACurrentMediaTime()
     private var cursorHeld = false
 
+    var respawnLater = true
+
     /// When true, the real pointer is frozen in the kitty's mouth during the 3-second hold.
     var freezeCursor = true
 
@@ -609,6 +612,12 @@ final class KittyController: NSObject {
         guard state == .gone || state == .fading else { return }
         releaseCursor()
         spawn(near: NSEvent.mouseLocation)
+    }
+
+    // Resets respawnDelay and callKitty
+    func recallKitty() {
+        respawnDelay = 8
+        callKitty()
     }
 
     func releaseCursor() {
@@ -774,7 +783,7 @@ final class KittyController: NSObject {
 
         switch state {
         case .gone:
-            if t > respawnDelay { spawn(near: ptr) }
+            if respawnDelay > 0 && t > respawnDelay { spawn(near: ptr) }
             return
 
         case .chasing:
@@ -914,7 +923,7 @@ final class KittyController: NSObject {
             if alpha <= 0 {
                 window.orderOut(nil)
                 window.ignoresMouseEvents = true
-                respawnDelay = 8
+                respawnDelay = respawnLater ? 8 : 0
                 enter(.gone)
                 return
             }
@@ -938,6 +947,7 @@ final class KittyController: NSObject {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var kitty: KittyController!
     private var statusItem: NSStatusItem!
+    private var respawnLaterItem: NSMenuItem!
     private var freezeItem: NSMenuItem!
     private var signalSources: [DispatchSourceSignal] = []
 
@@ -954,6 +964,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let call = NSMenuItem(title: "Call the Kitty", action: #selector(callKitty), keyEquivalent: "")
         call.target = self
         menu.addItem(call)
+
+        respawnLaterItem = NSMenuItem(title: "Respawn Kitty Later",
+                                action: #selector(toggleRespawnLater), keyEquivalent: "")
+        respawnLaterItem.target = self
+        respawnLaterItem.state = .on
+        menu.addItem(respawnLaterItem)
 
         freezeItem = NSMenuItem(title: "Hold Pointer in Mouth When Caught",
                                 action: #selector(toggleFreeze), keyEquivalent: "")
@@ -985,6 +1001,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func callKitty() { kitty.callKitty() }
+
+    @objc private func toggleRespawnLater() {
+        kitty.respawnLater.toggle()
+        respawnLaterItem.state = kitty.respawnLater ? .on : .off
+        if kitty.respawnLater {
+            kitty.recallKitty()
+        }
+    }
 
     @objc private func toggleFreeze() {
         kitty.freezeCursor.toggle()
