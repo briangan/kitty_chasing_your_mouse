@@ -30,4 +30,4 @@ EOF
 codesign --force --deep --sign - "$APP" >/dev/null 2>&1 || true
 
 echo "Built $APP — launching…"
-open "$APP"
+"./$APP/Contents/MacOS/KittyChasingYourMouse"

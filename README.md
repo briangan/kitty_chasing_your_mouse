@@ -21,13 +21,47 @@ Are you sure you want to open it?
 
 After launch, a kitty icon will appear at top in your control panel icons area.  That has the menu command to Quit.  And it has command to Call the Kitty too.  [See Menu](images/menu.png)
 
+
+------------------------------------
+
+
+# Features
+
+## Completed
+* [x] Initial app with animations.
+* [x] Change to cuter kitty.
+* [x] After finishing eating, change to sitting position instead of fading away.
+* [x] Implemented eating to sitting
+* [x] Implemented click away
+* [x] Implemented petting and howling
+* [x] Menu item to toggle respawn kitty later
+* [x] After disappearance, call to schedule depends on flag respawnLater. 
+
+## Incoming
+* Change hover over kitty mouse pointer to hand
+
+## Future Ideas
+* Upon respawn, there's a little delay flicker that shows a frame of kitty at old location before showing new kitty else where.  Supposedly kept invisible.
+* Make kitty moveable by drag
+* Color of control panel icon changed to represent current state of respawn: green or default UI color.
+* When another launch is initiated, for instance after rebuild then launch, check if there's existing already running process and terminate it.
+* Refactor out codes to different files of front end, controller and model levels.
+* Modulize KittyView to a common abstract MovingObjectView, so other animals or characters can be other options to switch to.
+* Set auto load at login.
+
+
+## Your Suggestions
+If you have ideas of what else to add, you can post in Issues
+
+
 -------------------------------------
 
 # Steps of Using AI for Development
 
 ## Version 0.1 - 2026/11/16 12PM EST
+### AI agent used: Claude Code Sonnet 5.5
 ### Preparation
-Prompt given to Claude Code Sonnet 5.5:
+Prompt:
 ```
 Create a Mac app that adds animated 2D icon of a cat following the mouse pointer.  The actions of the cat would be: run & catch the moving mouse pointer; when the cat catches the mouse pointer, bite it and hold in mouth for 3 seconds and the cat fades away; when mouse pointer is idle for a minute or more, the cat takes a nap next to it.
 ```
@@ -35,6 +69,7 @@ Create a Mac app that adds animated 2D icon of a cat following the mouse pointer
 Initially there was no reference graphics or design of the cat was given.
 
 ### Result:
+* Surprised that AI generated the rendering of kitty graphics and animations with a drawing group of lines and shapes instead of raw static and animated images.
 * That cat drawn by Swift code is not bad.
 * In running mode, the limbs towards the viewer's side are still behind the body instead of being in front.
 * In waiting stance, the limbs stick out, and back legs are not so distinctly recognizable.  The body too long, thus, too tall.
@@ -67,36 +102,30 @@ Make the following animation and sequence changes instead.
 * Implemented petting and howling
 
 
-## Version 0.4 - 2026/11/16 11:30PM EST
+## Version 0.4 - 2026/11/17 10:30AM EST
 This version is entirely manual corrections and additions since the language of Swift is relatively easy to understand, 
 and AI has generated straight-forward for running the app.
 * Implemented menu item to Repawn Kitty Later, and based on that option, determine to skip respawn or recall kitty to respawn
 
-------------------------------------
+
+## Version 0.4.1 - 2026/11/17 10:30PM EST
+### AI agent used: local Claude + Ollama running qwen3.8-9b-q8_0 (10GB size)
+
+This feature "Change hover over kitty mouse pointer to hand" still could not run properly from currently generated statements to set cursor conditionally.  
+There might be OS level global override since the kitty is only an overlay.
+
+While I asking several troubelshooting questions that specifically had AI validate the effect of the statements and teach debugging method, this model could suggest thoroughly with reasonable wordings.  But it still failed on fixing some Swift specific problems.
+
+Because the machine running this local AI is only a M4 MBP with 24GB RAM, 
+the slowest part was when it went into editing the source file according to its suggestions in the background, which took at least 5 minutes.
+It had its problem in finding the exact lines for the code changes although it was only one source file.
 
 
-# Features
+## Version 0.5 - 2026/11/18 12PM EST
+### AI agent used: Claude Code Sonnet 5.5
 
-## Completed
-* [x] Initial app with animations.
-* [x] Change to cuter kitty.
-* [x] After finishing eating, change to sitting position instead of fading away.
-* [x] Implemented eating to sitting
-* [x] Implemented click away
-* [x] Implemented petting and howling
-* [x] Menu item to toggle respawn kitty later
-* [x] After disappearance, call to schedule depends on flag respawnLater. 
+### Preparation
+Because of local ai qwen3.8-9b-q8_0 struggle with feature "Change hover over kitty mouse pointer to hand", I switched back to online AI agent.  
 
-## Incoming
-* Change hover over kitty mouse pointer to hand
-
-## Future Ideas
-* Upon respawn, there's a little delay flicker that shows a frame of kitty at old location before showing new kitty else where.  Supposedly kept invisible.
-* Color of control panel icon changed to represent current state of respawn: green or default UI color.
-* When another launch is initiated, for instance after rebuild then launch, check if there's existing already running process and terminate it.
-* Refactor out codes to different files of front end, controller and model levels.
-* Set auto load at login.
-* Swithable colors of the kitty.
-
-## Your Suggestions
-If you have ideas of what else to add, you can post in Issues
+### Result
+The agent was able to add much more UI configuration and logical checks such as updateTrackingAreas call, which without deep knowledge of Cocoa and Swift I'd not have figured out in a short time.  By myself I'd need to try and learn from scratch the simplest GUI app and expand further with new additional features.

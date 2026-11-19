@@ -14,10 +14,23 @@
 // Build:  ./build.sh      (needs Xcode command line tools)
 
 import Cocoa
-
+import SwiftUI
 
 private let VERSION = "0.3"
 private let APP_NAME = "Kitty Chasing Your Mouse"
+
+// A background (accessory) app is normally not allowed to change the cursor: the window server
+// keeps resetting it to the active app's cursor, which is why NSCursor.set()/push() did nothing.
+// This private CoreGraphics connection property lifts that restriction.
+@_silgen_name("CGSMainConnectionID")
+private func CGSMainConnectionID() -> Int32
+@_silgen_name("CGSSetConnectionProperty")
+private func CGSSetConnectionProperty(_ cid: Int32, _ targetCID: Int32, _ key: CFString, _ value: CFTypeRef) -> Int32
+
+private func allowCursorChangesInBackground() {
+    let cid = CGSMainConnectionID()
+    _ = CGSSetConnectionProperty(cid, cid, "SetsCursorInBackground" as CFString, kCFBooleanTrue)
+}
 
 // MARK: - Palette & geometry
 
@@ -352,6 +365,29 @@ final class KittyView: NSView {
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
     override func mouseDown(with event: NSEvent) { onClick?() }
 
+    // MARK: Hand cursor
+    /// Set by the controller each frame: true while the pointer is over a clickable/pettable kitty.
+    var wantsHand = false
+
+    // A tracking area with .activeAlways is what lets this (never-active) overlay window
+    // receive enter/move/cursorUpdate events and change the cursor.
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        for area in trackingAreas { removeTrackingArea(area) }
+        addTrackingArea(NSTrackingArea(rect: bounds,
+                                       options: [.activeAlways, .inVisibleRect, .mouseEnteredAndExited,
+                                                 .mouseMoved, .cursorUpdate],
+                                       owner: self, userInfo: nil))
+    }
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        updateTrackingAreas()
+    }
+    override func cursorUpdate(with event: NSEvent) { if wantsHand { NSCursor.pointingHand.set() } }
+    override func mouseMoved(with event: NSEvent)   { if wantsHand { NSCursor.pointingHand.set() } }
+    override func mouseEntered(with event: NSEvent) { if wantsHand { NSCursor.pointingHand.set() } }
+    override func mouseExited(with event: NSEvent)  { NSCursor.arrow.set() }
+
     override func draw(_ dirtyRect: NSRect) {
         guard let ctx = NSGraphicsContext.current?.cgContext else { return }
         ctx.saveGState()
@@ -578,6 +614,7 @@ final class KittyController: NSObject {
 
     /// When true, the real pointer is frozen in the kitty's mouth during the 3-second hold.
     var freezeCursor = true
+    private var handShown = false          // we have switched the cursor to the pointing hand
 
     override init() {
         let v = KittyView(frame: NSRect(origin: .zero, size: spriteSize))
@@ -589,6 +626,7 @@ final class KittyController: NSObject {
         w.backgroundColor = .clear
         w.hasShadow = false
         w.ignoresMouseEvents = true           // switched off only while the pointer is over a clickable kitty
+        w.acceptsMouseMovedEvents = true
         w.level = .screenSaver
         w.isFloatingPanel = true
         w.hidesOnDeactivate = false
@@ -794,11 +832,12 @@ final class KittyController: NSObject {
             let onKitty = sitting && seatedRect().contains(ptr)
             if !onKitty { resetScrub(ptr.x) }
 
-            if onKitty && idleFor < 60 {
+            if onKitty && idleFor < 30 {
                 // Pointer is over the waiting kitty: it can be petted, but it won't be chased.
                 vel = .zero
                 view.pose = .sit
                 trackScrub(ptr.x, now: now)
+
                 if scrubReversals >= petReversalsNeeded {
                     resetScrub(ptr.x)
                     enter(.petting)
@@ -814,14 +853,14 @@ final class KittyController: NSObject {
                 sitInPlace = false
                 if ptr.x > pos.x + 12 { facing = 1 } else if ptr.x < pos.x - 12 { facing = -1 }
                 steer(to: CGPoint(x: ptr.x - facing * mouthRel.x, y: ptr.y - mouthRel.y),
-                      maxSpeed: 800, dt: dt)
+                    maxSpeed: 800, dt: dt)
                 let m = mouthPoint()
                 if hypot(m.x - ptr.x, m.y - ptr.y) < 28 {
                     startBite(pointer: ptr)
                     break
                 }
                 view.pose = .run
-            } else if idleFor >= 60 {
+            } else if idleFor >= 30 {
                 napSide = pos.x >= ptr.x ? 1 : -1
                 sitting = false
                 sitInPlace = false
@@ -923,8 +962,7 @@ final class KittyController: NSObject {
             if alpha <= 0 {
                 window.orderOut(nil)
                 window.ignoresMouseEvents = true
-                respawnDelay = respawnLater ? 8 : 0
-                enter(.gone)
+                NSApp.terminate(nil)
                 return
             }
         }
@@ -937,7 +975,19 @@ final class KittyController: NSObject {
         window.alphaValue = alpha
         window.setFrameOrigin(NSPoint(x: pos.x - feetAnchor.x, y: pos.y - feetAnchor.y))
         // The window only catches clicks while the pointer is over a clickable kitty.
-        window.ignoresMouseEvents = !(isClickable && bodyRect().contains(ptr))
+        let hover = isClickable && bodyRect().contains(ptr)
+        window.ignoresMouseEvents = !hover
+        // Pointing hand over the waiting/sleeping kitty (not while it holds the pointer: the drawn
+        // arrow in its mouth should match the real one).
+        let wantHand = hover && state != .biting
+        view.wantsHand = wantHand
+        if wantHand {
+            NSCursor.pointingHand.set()
+            handShown = true
+        } else if handShown {
+            NSCursor.arrow.set()
+            handShown = false
+        }
         view.needsDisplay = true
     }
 }
@@ -952,6 +1002,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var signalSources: [DispatchSourceSignal] = []
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        allowCursorChangesInBackground()
         kitty = KittyController()
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
