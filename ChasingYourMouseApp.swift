@@ -1,24 +1,15 @@
-// KittyChasingYourMouse.swift  —  "Kitty Chasing Your Mouse"
-// A tiny animated 2D kitty that lives on top of your desktop and chases the mouse pointer.
 //
-//  - Runs after the pointer while it is moving and catches it.
-//  - On catch: bites the pointer, holds it in its mouth for 3 seconds, then sits down and waits.
-//  - While it waits, scrub the pointer left and right 3 times over it to pet it: it howls joyfully.
-//  - Click the kitty while it is eating, waiting or sleeping and it fades away.
-//  - If the pointer is idle for 30s+, the kitty curls up and naps next to it.
-//  - The kitty comes back a few seconds after it fades away.
+//  ChasingYourMouse.swift
+//  chasing_your_mouse
 //
-// Files:  KittyChasingYourMouse.swift  (this file: app entry, menu bar item)
-//         KittyController.swift        (behaviour / state machine / overlay window)
-//         KittyView.swift              (palette, drawing helpers, the drawn kitty)
+//  Created by brian on 11/23/26.
 //
-// Build:  ./build.sh      (needs Xcode command line tools)
 
 import Cocoa
 import SwiftUI
 
 private let VERSION = "0.6"
-private let APP_NAME = "Kitty Chasing Your Mouse"
+private let APP_NAME = "Chasing Your Mouse"
 
 // A background (accessory) app is normally not allowed to change the cursor: the window server
 // keeps resetting it to the active app's cursor, which is why NSCursor.set()/push() did nothing.
@@ -114,7 +105,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 }
 
 @main
-struct KittyChasingYourMouseApp {
+struct ChasingYourMouseApp: App {
+    
     static func main() {
         let app = NSApplication.shared
         let delegate = AppDelegate()
@@ -122,4 +114,12 @@ struct KittyChasingYourMouseApp {
         app.setActivationPolicy(.accessory)      // no Dock icon; control it from the 🐱 menu bar item
         app.run()
     }
+
+
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+        }
+    }
 }
+
