@@ -8,8 +8,8 @@
 import Cocoa
 import SwiftUI
 
-private let VERSION = "0.6"
-private let APP_NAME = "Chasing Your Mouse"
+let VERSION = "0.7"
+let APP_NAME = "Chasing Your Mouse"
 
 // A background (accessory) app is normally not allowed to change the cursor: the window server
 // keeps resetting it to the active app's cursor, which is why NSCursor.set()/push() did nothing.
@@ -32,6 +32,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var respawnLaterItem: NSMenuItem!
     private var freezeItem: NSMenuItem!
     private var signalSources: [DispatchSourceSignal] = []
+    private var aboutWindow: NSWindow?   // <-- keep a reference so it doesn’t de‑allocate
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         allowCursorChangesInBackground()
@@ -41,7 +42,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem.button?.title = "🐱"
 
         let menu = NSMenu()
-        let aboutVersion = NSMenuItem(title: "\(APP_NAME) — Version \(VERSION)", action: nil, keyEquivalent: "")
+        let aboutVersion = NSMenuItem(title: "About \(APP_NAME) — Version", action: #selector(aboutDialog), keyEquivalent: "")
         menu.addItem(aboutVersion)
 
         let call = NSMenuItem(title: "Call the Kitty", action: #selector(callKitty), keyEquivalent: "")
@@ -83,6 +84,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         _ = CGAssociateMouseAndMouseCursorPosition(1)
     }
 
+    @objc private func aboutDialog() {
+        if let window = aboutWindow {
+            window.makeKeyAndOrderFront(nil)
+            return
+        }
+
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 410, height: 260),
+                              styleMask: [.titled, .closable],
+                              backing: .buffered,
+                              defer: false)
+        window.center()
+        window.title = "About \(APP_NAME)"
+        window.level = .floating                // keep it above other windows
+        window.collectionBehavior = [.canJoinAllSpaces]
+        window.contentView = NSHostingView(rootView: AboutView())
+        window.makeKeyAndOrderFront(nil)
+        aboutWindow = window
+    }
+    
+    @objc public func closeAboutWindow() {
+        self.aboutWindow = nil
+    }
+
     @objc private func callKitty() { kitty.callKitty() }
 
     @objc private func toggleRespawnLater() {
@@ -99,6 +123,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func quit() {
+        print(".. Quiting ..")
         kitty.releaseCursor()
         NSApp.terminate(nil)
     }
@@ -106,7 +131,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 @main
 struct ChasingYourMouseApp: App {
-    
+
     static func main() {
         let app = NSApplication.shared
         let delegate = AppDelegate()
@@ -115,11 +140,8 @@ struct ChasingYourMouseApp: App {
         app.run()
     }
 
-
     var body: some Scene {
         WindowGroup {
-            ContentView()
         }
     }
 }
-

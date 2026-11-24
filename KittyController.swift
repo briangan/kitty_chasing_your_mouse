@@ -391,7 +391,7 @@ final class KittyController: NSObject {
             if alpha <= 0 {
                 window.orderOut(nil)
                 window.ignoresMouseEvents = true
-                NSApp.terminate(nil)
+                NSApp.terminate(nil) // unless set to respawn
                 return
             }
         }

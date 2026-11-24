@@ -1,6 +1,6 @@
 # About
 
-A simple Mac utility to add an animated 2D icon of a kitty following the mouse pointer.  The actions of the kitty would be
+A simple Mac utility to add an animated 2D icon of an animated object like a kitty following the mouse pointer.  The actions of the kitty would be
 * Run & catch the moving mouse pointer with running animation
 * When the kitty catches the mouse pointer, bite it and hold in mouth for 3 seconds and the kitty starts sitting and waiting.
 * When the kitty is in eating or waiting or sleeping position, click on the kitty fades it away.
@@ -34,9 +34,11 @@ After launch, a kitty icon will appear at top in your control panel icons area. 
 * [x] After disappearance, call to schedule depends on flag respawnLater. 
 * [x] Change hover over kitty mouse pointer to hand
 * [x] Refactor out codes to different files of front end, controller and main app.
+* [x] Convert the project from classic command-line or manually edited codes to XCode project that follows its structure and template.
+* [x] Rename the project to "Chasing Your Mouse" instead of "Kitty Chasing Your Mouse".
+* [x] About Me dialog pop up.
 
 ## Incoming
-* Convert the project from classic self
 
 ## Future Ideas
 * Upon respawn, there's a little delay flicker that shows a frame of kitty at old location before showing new kitty else where.  Supposedly kept invisible.
@@ -100,6 +102,7 @@ Make the following animation and sequence changes instead.
 
 
 ## Version 0.4 - 2026/11/17 10:30AM EST
+
 This version is entirely manual corrections and additions since the language of Swift is relatively easy to understand, 
 and AI has generated straight-forward for running the app.
 * Implemented menu item to Repawn Kitty Later, and based on that option, determine to skip respawn or recall kitty to respawn
@@ -158,7 +161,7 @@ Prompt:
 As you see, the current AI-created code base of this Mac OS app is entirely processed in the background without the need of IDE like XCode.  Therefore, only raw code files were created at root folder without any template of project structure or settings.  Would it be more beneficial to convert the codebase to XCode project for code and asset management, compatibility, etc.?
 ```
 
-### Ansewr
+### Answer
 ```
 Yes, but how much it helps depends on your goal. For a small app you only run yourself, the current setup is fine. If you plan to share it or keep growing it, an Xcode project is worth it.
 
@@ -177,3 +180,21 @@ Generated project files: an AI writing project.pbxproj by hand is error-prone. C
 Heavier tooling: you'd need full Xcode instead of just the Command Line Tools.
 The private API: the cursor fix uses a private CoreGraphics call, so the app can't go on the App Store whatever tooling you use. Direct distribution with Developer ID signing is the realistic route.
 ```
+
+## Version 0.7 - 2026/11/24 2PM EST
+### AI agent used: local coney_/gpt-oss_claude-sonnet4.6 within XCode
+
+### Preparation
+
+* Actually named the app name to more generic X
+* Converted the project to XCode by creating a project and saving the ".xcodeproj" extension file in this parent folder and relocating the app's main section.
+* Changed app's main body to render a no-window KittyView
+* Changed the default ContentView to AboutView to test whether the menu item About can work properly by displaying an alert dialog with name and version.
+
+Prompt:
+```
+Pop up an alert rendered with AboutView
+```
+
+### Answer
+Able was able to move over the segment that renders kitty using separate controller and view files to the main app class. 
