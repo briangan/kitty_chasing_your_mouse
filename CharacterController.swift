@@ -1,4 +1,4 @@
-// KittyController.swift  —  "Kitty Chasing Your Mouse"
+// CharacterController.swift  —  "Kitty Chasing Your Mouse"
 // The kitty's brain: owns the transparent overlay window, runs the 60 fps loop and the
 // state machine (chasing, biting, waiting, petting, napping, fading) using some CharacterView for drawing.
 
@@ -6,7 +6,7 @@ import Cocoa
 
 // MARK: - Behaviour
 
-final class KittyController: NSObject {
+final class CharacterController: NSObject {
     private enum State { case gone, chasing, goingToNap, sleeping, waking, biting, petting, fading }
 
     private let window: NSWindow
@@ -254,6 +254,7 @@ final class KittyController: NSObject {
             return
 
         case .chasing:
+            
             view.mouthOpen = 0
             view.lookUp = 0
             view.petting = false

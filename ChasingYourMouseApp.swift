@@ -27,7 +27,7 @@ private func allowCursorChangesInBackground() {
 // MARK: - App
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    private var kitty: KittyController!
+    private var characterCtrl: CharacterController!
     private var statusItem: NSStatusItem!
     private var respawnLaterItem: NSMenuItem!
     private var freezeItem: NSMenuItem!
@@ -36,7 +36,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         allowCursorChangesInBackground()
-        kitty = KittyController()
+        characterCtrl = CharacterController()
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         statusItem.button?.title = "🐱"
@@ -107,24 +107,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.aboutWindow = nil
     }
 
-    @objc private func callKitty() { kitty.callKitty() }
+    @objc private func callKitty() { characterCtrl.callKitty() }
 
     @objc private func toggleRespawnLater() {
-        kitty.respawnLater.toggle()
-        respawnLaterItem.state = kitty.respawnLater ? .on : .off
-        if kitty.respawnLater {
-            kitty.recallKitty()
+        characterCtrl.respawnLater.toggle()
+        respawnLaterItem.state = characterCtrl.respawnLater ? .on : .off
+        if characterCtrl.respawnLater {
+            characterCtrl.recallKitty()
         }
     }
 
     @objc private func toggleFreeze() {
-        kitty.freezeCursor.toggle()
-        freezeItem.state = kitty.freezeCursor ? .on : .off
+        characterCtrl.freezeCursor.toggle()
+        freezeItem.state = characterCtrl.freezeCursor ? .on : .off
     }
 
     @objc private func quit() {
         print(".. Quiting ..")
-        kitty.releaseCursor()
+        characterCtrl.releaseCursor()
         NSApp.terminate(nil)
     }
 }
