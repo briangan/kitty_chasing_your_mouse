@@ -1,13 +1,23 @@
 #!/bin/bash
 
-# Define Source and Destination
-SRC="icon.png"
+# If the current working directory contains the substring "scripts",
+# change to its parent directory.
+if [[ $(pwd) == *scripts* ]]; then
+    cd ..
+fi
+
+# Use the SRC environment variable if it’s set; otherwise default to "icon.png".
+: ${SRC:=icon.png}
+
 DEST="AppIcon.iconset"
 
-mkdir $DEST
+# Ensure the destination directory exists
+mkdir -p "$DEST"
 
-# Helper function
-gen_icon() { sips -s format png -z $1 $1 "$SRC" --out "$DEST/$2"; }
+# Helper function: create an icon of the requested size
+gen_icon() {
+    sips -s format png -z "$1" "$1" "$SRC" --out "$DEST/$2"
+}
 
 # Generate standard and retina sizes
 gen_icon 16   "icon_16x16.png"
