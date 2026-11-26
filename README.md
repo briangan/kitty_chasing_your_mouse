@@ -37,15 +37,18 @@ After launch, a kitty icon will appear at top in your control panel icons area. 
 * [x] Convert the project from classic command-line or manually edited codes to XCode project that follows its structure and template.
 * [x] Rename the project to "Chasing Your Mouse" instead of "Kitty Chasing Your Mouse".
 * [x] About Me dialog pop up.
+* [x] Changed KittyView to be the child class of a common abstract CharacterView, so other animals or characters can be other options to switch to.
 
 ## Incoming
+
+* Add a sub-menu of the menu item to include available sets of characters.  Currently: kitty, puppy
 
 ## Future Ideas
 * Upon respawn, there's a little delay flicker that shows a frame of kitty at old location before showing new kitty else where.  Supposedly kept invisible.
 * Make kitty moveable by drag
 * Color of control panel icon changed to represent current state of respawn: green or default UI color.
 * When another launch is initiated, for instance after rebuild then launch, check if there's existing already running process and terminate it.
-* Modulize KittyView to a common abstract MovingObjectView, so other animals or characters can be other options to switch to.
+* Clean up more methods of CharacterView and other child classes.
 * Set auto load at login.
 
 
@@ -57,9 +60,10 @@ If you have ideas of what else to add, you can post in Issues
 
 # Steps of Using AI for Development
 
-## Version 0.1 - 2026/11/16 12PM EST
+## Version 0.1
+2026/11/16 12PM EST
 ### AI agent used: Claude Code Sonnet 5.5
-### Preparation
+#### Preparation
 Prompt:
 ```
 Create a Mac app that adds animated 2D icon of a cat following the mouse pointer.  The actions of the cat would be: run & catch the moving mouse pointer; when the cat catches the mouse pointer, bite it and hold in mouth for 3 seconds and the cat fades away; when mouse pointer is idle for a minute or more, the cat takes a nap next to it.
@@ -67,14 +71,16 @@ Create a Mac app that adds animated 2D icon of a cat following the mouse pointer
 
 Initially there was no reference graphics or design of the cat was given.
 
-### Result:
+#### Result:
 * Surprised that AI generated the rendering of kitty graphics and animations with a drawing group of lines and shapes instead of raw static and animated images.
 * That cat drawn by Swift code is not bad.
 * In running mode, the limbs towards the viewer's side are still behind the body instead of being in front.
 * In waiting stance, the limbs stick out, and back legs are not so distinctly recognizable.  The body too long, thus, too tall.
 
-## Version 0.2 - 2026/11/16 4:30PM EST
-### Preparation
+## Version 0.2
+2026/11/16 4:30PM EST
+### AI agent not used
+#### Preparation
 Downloaded sample cute cat icon from [Vecteezy T-shirt Pond](https://www.vecteezy.com/vector-art/25805998-kawaii-cat-flat-icon-vector-cute-cat-flat-illustration-cute-kawaii-cat-flat-illustration-art-icons-and-graphics).
 
 Prompt:
@@ -84,8 +90,10 @@ Change the look of the cat to this in image, and change each stance/position dra
 ### Result
 * Much cuter kitty.  For now using [the orange one](images/kawaii-cat-flat-icon-orange-only.png).
 
-## Version 0.3 - 2026/11/16 5:00PM EST
-### Preparation
+## Version 0.3
+2026/11/16 5:00PM EST
+### AI agent used: Claude Code Sonnet 5.5
+#### Preparation
 
 Prompt:
 ```
@@ -95,23 +103,29 @@ Make the following animation and sequence changes instead.
 * While in eating or waiting or sleeping position, click on the kitty fades it away.
 ```
 
-### Result
+#### Result
 * Implemented eating to sitting
 * Implemented click away
 * Implemented petting and howling
 
 
-## Version 0.4 - 2026/11/17 10:30AM EST
+## Version 0.4
+2026/11/17 10:30AM EST
+### AI agent not used
 
 This version is entirely manual corrections and additions since the language of Swift is relatively easy to understand, 
 and AI has generated straight-forward for running the app.
 * Implemented menu item to Repawn Kitty Later, and based on that option, determine to skip respawn or recall kitty to respawn
 
 
-## Version 0.4.1 - 2026/11/17 10:30PM EST
+## Version 0.4.1
+2026/11/17 10:30PM EST
 ### AI agent used: local Claude + Ollama running qwen3.8-9b-q8_0 (10GB size)
 
+#### Preparation
 This feature "Change hover over kitty mouse pointer to hand" still could not run properly from currently generated statements to set cursor conditionally.  
+
+#### Result
 There might be OS level global override since the kitty is only an overlay.
 
 While I asking several troubelshooting questions that specifically had AI validate the effect of the statements and teach debugging method, this model could suggest thoroughly with reasonable wordings.  But it still failed on fixing some Swift specific problems.
@@ -121,20 +135,22 @@ the slowest part was when it went into editing the source file according to its 
 It had its problem in finding the exact lines for the code changes although it was only one source file.
 
 
-## Version 0.5 - 2026/11/18 12PM EST
+## Version 0.5
+2026/11/18 12PM EST
 ### AI agent used: Claude Code Sonnet 5.5
 
-### Preparation
+#### Preparation
 Because of local ai qwen3.8-9b-q8_0 struggle with feature "Change hover over kitty mouse pointer to hand", I switched back to online AI agent.  
 
-### Result
+#### Result
 The agent was able to add much more UI configuration and logical checks such as updateTrackingAreas call, which without deep knowledge of Cocoa and Swift I'd not have figured out in a short time.  By myself I'd need to try and learn from scratch the simplest GUI app and expand further with new additional features.
 
 
-## Version 0.6 - 2026/11/23 3PM EST
+## Version 0.6
+2026/11/23 3PM EST
 ### AI agent used: Claude Code Sonnet 5.5
 
-### Preparation
+#### Preparation
 Prompt:
 ```
 Refactor out classes of KittyView and KittyController to their own files and current file would include them for use and build.
@@ -146,22 +162,23 @@ swiftc -O -parse-as-library KittyChasingYourMouse.swift KittyController.swift Ki
 ```
 So had to use cloud Claude Code to sort the files.
 
-### Result
+#### Result
 Claude was able to separate the files, share commonly used constants, and update the build script to compile the new files also.
 
 This modulization would help future plugin of similarly structured but different implementations.
 
 
-## Version 0.6.1 - 2026/11/24 10AM EST
+## Version 0.6.1
+2026/11/24 10AM EST
 ### AI agent used: Claude Code Sonnet 5.5
 
-### Project planning
+#### Project planning
 Prompt:
 ```
 As you see, the current AI-created code base of this Mac OS app is entirely processed in the background without the need of IDE like XCode.  Therefore, only raw code files were created at root folder without any template of project structure or settings.  Would it be more beneficial to convert the codebase to XCode project for code and asset management, compatibility, etc.?
 ```
 
-### Answer
+#### Answer
 ```
 Yes, but how much it helps depends on your goal. For a small app you only run yourself, the current setup is fine. If you plan to share it or keep growing it, an Xcode project is worth it.
 
@@ -184,7 +201,7 @@ The private API: the cursor fix uses a private CoreGraphics call, so the app can
 ## Version 0.7 - 2026/11/24 2PM EST
 ### AI agent used: local coney_/gpt-oss_claude-sonnet4.6 within XCode
 
-### Preparation
+#### Preparation
 
 * Actually named the app name to more generic X
 * Converted the project to XCode by creating a project and saving the ".xcodeproj" extension file in this parent folder and relocating the app's main section.
@@ -196,5 +213,44 @@ Prompt:
 Pop up an alert rendered with AboutView
 ```
 
-### Answer
-Able was able to move over the segment that renders kitty using separate controller and view files to the main app class. 
+#### Result
+
+Able was able to move over the segment that renders kitty using separate controller and view files to the main app class.
+
+The effect of this local AI model wthin XCode is actually pretty effective compared to the Continue extension inside Visual Studio Code.  
+The speed of processing prompt and generating result each took around 1 minute.  But at least XCode's AI agent chat panel has the clean UI and its apply code changes is more definite and functional.  Then the conversion into XCode project and using XCode as the code editor seems to be beneficial a bit.
+
+Unfortunately Xcode and Continue extension still have this problem: no direct read and write access files, so project-wide conversation/session fails to gain code file access and modify the codes correctly.  Thus, would still need to upload files along with the prompt and the final file changes is still only code change suggestion as snippet copied to replace the entire code file.  Otherwise, XCode still has an inline AI side-agent that can read current file. 
+
+## Version 0.8
+2026/11/25 1PM EST
+### AI agent used: local sorc/qwen3.5-claude-4.6-opus for being multi-modal and able to handle images
+
+#### Preparation
+Prompt:
+```
+We can try option of inheriting a PuppyView from KittyView, and attempt to use draw methods of KittyView  and test whether drawing body parts of puppy are the similar or different in terms of drawing methods and content sizes.  Can you try to implement PuppyView to look like the puppy in attached image? @
+```
+
+#### Result
+It has reasonable explanation of which parts of KittyView that PuppyView can use.  Unfortunately the syntax of Swift codes have a few types of errors: 
+* initializations of color and location missing the argument
+* wrong variable name to fill in color for shapes 
+* no code change suggested to KittyView when private methods should be opended for subclass usage
+
+After 2 attempts to specifically point out the syntax errors, this AI model further diverted from resolving the issues.
+* calling methods of UI component but not found by compiler.
+
+### AI agent used: local gemma4:12b for being multi-modal
+
+#### Result
+A few small syntax errors involved with private scope and missing function argument.
+
+But main problem was that the switch to run this PuppyView instead of Kitty entered a freeze, and could not even access menu item to quit it.
+
+ 
+### AI agent used: Claude Code Sonnet 5.5
+#### Result
+There were only 2 minor syntax errors involved with variable and function scopes.
+
+Otherwise, the puppy ran correctly as replacement of the kitty.

@@ -1,6 +1,6 @@
 // KittyController.swift  —  "Kitty Chasing Your Mouse"
 // The kitty's brain: owns the transparent overlay window, runs the 60 fps loop and the
-// state machine (chasing, biting, waiting, petting, napping, fading) using KittyView for drawing.
+// state machine (chasing, biting, waiting, petting, napping, fading) using some CharacterView for drawing.
 
 import Cocoa
 
@@ -10,7 +10,7 @@ final class KittyController: NSObject {
     private enum State { case gone, chasing, goingToNap, sleeping, waking, biting, petting, fading }
 
     private let window: NSWindow
-    private let view: KittyView
+    private let view: CharacterView
     private var timer: Timer?
 
     private var state: State = .gone
@@ -46,7 +46,7 @@ final class KittyController: NSObject {
     private var handShown = false          // we have switched the cursor to the pointing hand
 
     override init() {
-        let v = KittyView(frame: NSRect(origin: .zero, size: spriteSize))
+        let v = PuppyView(frame: NSRect(origin: .zero, size: spriteSize))
         // A non-activating panel lets you click the kitty without stealing focus from your app.
         let w = NSPanel(contentRect: v.frame, styleMask: [.borderless, .nonactivatingPanel],
                         backing: .buffered, defer: false)
