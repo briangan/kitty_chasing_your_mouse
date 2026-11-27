@@ -8,7 +8,7 @@
 import Cocoa
 import SwiftUI
 
-let VERSION = "0.7"
+let VERSION = "0.1"
 let APP_NAME = "Chasing Your Mouse"
 
 // A background (accessory) app is normally not allowed to change the cursor: the window server
@@ -29,6 +29,7 @@ private func allowCursorChangesInBackground() {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var characterCtrl: CharacterController!
     private var statusItem: NSStatusItem!
+    private var charactersMenu: NSMenu!
     private var respawnLaterItem: NSMenuItem!
     private var freezeItem: NSMenuItem!
     private var signalSources: [DispatchSourceSignal] = []
@@ -42,23 +43,38 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem.button?.title = "🐱"
 
         let menu = NSMenu()
-        let aboutVersion = NSMenuItem(title: "About \(APP_NAME) — Version", action: #selector(aboutDialog), keyEquivalent: "")
+        let aboutVersion = NSMenuItem(title: "About \(APP_NAME)", action: #selector(aboutDialog), keyEquivalent: "")
         menu.addItem(aboutVersion)
 
-        let call = NSMenuItem(title: "Call the Kitty", action: #selector(callKitty), keyEquivalent: "")
+        let call = NSMenuItem(title: "Call the Character", action: #selector(callCharacter), keyEquivalent: "")
         call.target = self
         menu.addItem(call)
 
-        respawnLaterItem = NSMenuItem(title: "Respawn Kitty Later",
+        // Characters submenu
+        charactersMenu = NSMenu()
+        let kittyItem = NSMenuItem(title: "Kitty", action: #selector(switchToKitty), keyEquivalent: "")
+        kittyItem.target = self
+        kittyItem.state = .on
+        
+        let puppyItem = NSMenuItem(title: "Puppy", action: #selector(switchToPuppy), keyEquivalent: "")
+        puppyItem.target = self
+        charactersMenu.addItem(kittyItem)
+        charactersMenu.addItem(puppyItem)
+        let menuItemForSubmenu = NSMenuItem(title: "Which Character", action: nil, keyEquivalent: "")
+        menuItemForSubmenu.submenu = charactersMenu
+        menu.addItem(menuItemForSubmenu)
+
+        respawnLaterItem = NSMenuItem(title: "Respawn Character Later?",
                                 action: #selector(toggleRespawnLater), keyEquivalent: "")
         respawnLaterItem.target = self
-        respawnLaterItem.state = .on
+        syncRespawnLaterToMenu()
         menu.addItem(respawnLaterItem)
 
-        freezeItem = NSMenuItem(title: "Hold Pointer in Mouth When Caught",
-                                action: #selector(toggleFreeze), keyEquivalent: "")
+        freezeItem = NSMenuItem(title: "Hold Pointer in Mouth When Caught?",
+                                action: #selector(toggleFreezeCursor), keyEquivalent: "")
         freezeItem.target = self
-        freezeItem.state = .on
+        freezeItem.state = .on // will toggle
+        syncFreezeCursorToMenu()
         menu.addItem(freezeItem)
 
         menu.addItem(.separator())
@@ -92,8 +108,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 410, height: 260),
                               styleMask: [.titled, .closable],
-                              backing: .buffered,
-                              defer: false)
+                              backing: .buffered, defer: false)
         window.center()
         window.title = "About \(APP_NAME)"
         window.level = .floating                // keep it above other windows
@@ -107,18 +122,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.aboutWindow = nil
     }
 
-    @objc private func callKitty() { characterCtrl.callKitty() }
+    @objc private func callCharacter() { characterCtrl.callCharacter() }
 
     @objc private func toggleRespawnLater() {
         characterCtrl.respawnLater.toggle()
+        syncRespawnLaterToMenu()
+    }
+    
+    @objc private func syncRespawnLaterToMenu() {
         respawnLaterItem.state = characterCtrl.respawnLater ? .on : .off
         if characterCtrl.respawnLater {
-            characterCtrl.recallKitty()
+            characterCtrl.recallCharacter()
         }
     }
 
-    @objc private func toggleFreeze() {
+    @objc private func toggleFreezeCursor() {
         characterCtrl.freezeCursor.toggle()
+        syncFreezeCursorToMenu()
+    }
+    
+    @objc private func syncFreezeCursorToMenu() {
         freezeItem.state = characterCtrl.freezeCursor ? .on : .off
     }
 
@@ -126,6 +149,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         print(".. Quiting ..")
         characterCtrl.releaseCursor()
         NSApp.terminate(nil)
+    }
+    
+    @objc private func selectInCharactersSubmenu(_ character: String) {
+        for item in charactersMenu.items {
+            item.state = item.title == character ? .on : .off
+        }
+    }
+    
+    @objc private func switchToKitty() {
+        selectInCharactersSubmenu("Kitty")
+        characterCtrl.switchToCharacter(.kitty)
+    }
+    
+    @objc private func switchToPuppy() {
+        selectInCharactersSubmenu("Puppy")
+        characterCtrl.switchToCharacter(.puppy)
     }
 }
 

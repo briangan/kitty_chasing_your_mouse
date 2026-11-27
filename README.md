@@ -198,7 +198,8 @@ Heavier tooling: you'd need full Xcode instead of just the Command Line Tools.
 The private API: the cursor fix uses a private CoreGraphics call, so the app can't go on the App Store whatever tooling you use. Direct distribution with Developer ID signing is the realistic route.
 ```
 
-## Version 0.7 - 2026/11/24 2PM EST
+## Version 0.7
+2026/11/24 2PM EST
 ### AI agent used: local coney_/gpt-oss_claude-sonnet4.6 within XCode
 
 #### Preparation
@@ -254,3 +255,37 @@ But main problem was that the switch to run this PuppyView instead of Kitty ente
 There were only 2 minor syntax errors involved with variable and function scopes.
 
 Otherwise, the puppy ran correctly as replacement of the kitty.
+
+
+## Version 0.8.1
+2026/11/25 10PM
+
+### Renaming
+* Renamed KittyController to CharacterController to stay generic
+
+
+## Version 0.8.2
+2026/11/27 10AM
+
+### AI agent used: local Xcode chat + qwen3.8mlx
+#### Prompt
+```
+Add a submenu as the second item of the system menu: the list includes Kitty and Puppy, and each calls some swithToCharacter function.  And the default is Kitty.  Add function swithToCharacter function to the controller that immediately fades away existing character and renders newly selected character in waiting pose.
+```
+
+#### Result
+Logically it created the switchToCharacter function to recreate the character view according to whether Kitty or Puppy.
+The sub-menu to select character had wrong method error.
+
+I had to manually search online for correct calls to set sub-menu.
+
+#### Prompt
+```
+In func selectInCharactersSubmenu, iterate through items of charactersSubmenu and set state = .on when the title matches character argument
+```
+
+#### Result
+Simple task was done correctly.
+
+I further fixed up the calls of toggling and syncing Freeze Cursor and Repawn Later options between the menu checkmarks and controller.
+

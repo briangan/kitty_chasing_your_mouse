@@ -8,9 +8,10 @@ import Cocoa
 
 final class CharacterController: NSObject {
     private enum State { case gone, chasing, goingToNap, sleeping, waking, biting, petting, fading }
+    public enum CharacterType { case kitty, puppy }
 
     private let window: NSWindow
-    private let view: CharacterView
+    private var view: CharacterView
     private var timer: Timer?
 
     private var state: State = .gone
@@ -38,15 +39,16 @@ final class CharacterController: NSObject {
     private var lastPointer = NSEvent.mouseLocation
     private var lastMoveTime = CACurrentMediaTime()
     private var cursorHeld = false
+    private var handShown = false
 
+    // Flags for outside to set --------------------
     var respawnLater = true
 
     /// When true, the real pointer is frozen in the kitty's mouth during the 3-second hold.
-    var freezeCursor = true
-    private var handShown = false          // we have switched the cursor to the pointing hand
+    var freezeCursor = false
 
     override init() {
-        let v = PuppyView(frame: NSRect(origin: .zero, size: spriteSize))
+        let v = KittyView(frame: NSRect(origin: .zero, size: spriteSize))
         // A non-activating panel lets you click the kitty without stealing focus from your app.
         let w = NSPanel(contentRect: v.frame, styleMask: [.borderless, .nonactivatingPanel],
                         backing: .buffered, defer: false)
@@ -66,7 +68,7 @@ final class CharacterController: NSObject {
         window = w
         super.init()
 
-        v.onClick = { [weak self] in self?.kittyClicked() }
+        v.onClick = { [weak self] in self?.characterClicked() }
 
         let t = Timer(timeInterval: 1.0 / 60.0, repeats: true) { [weak self] _ in self?.tick() }
         RunLoop.main.add(t, forMode: .common)
@@ -75,16 +77,16 @@ final class CharacterController: NSObject {
 
     // MARK: Public
 
-    func callKitty() {
+    func callCharacter() {
         guard state == .gone || state == .fading else { return }
         releaseCursor()
         spawn(near: NSEvent.mouseLocation)
     }
 
     // Resets respawnDelay and callKitty
-    func recallKitty() {
+    func recallCharacter() {
         respawnDelay = 8
-        callKitty()
+        callCharacter()
     }
 
     func releaseCursor() {
@@ -92,6 +94,46 @@ final class CharacterController: NSObject {
             _ = CGAssociateMouseAndMouseCursorPosition(1)
             cursorHeld = false
         }
+    }
+
+    /// Switches the current character between Kitty and Puppy.
+    /// Fades the current character instantly and resets the new character to a waiting pose.
+    func switchToCharacter(_ type: CharacterType) {
+        enter(.fading)
+        
+        let newView: CharacterView
+        switch type {
+        case .kitty:
+            newView = KittyView(frame: NSRect(origin: .zero, size: spriteSize))
+        case .puppy:
+            newView = PuppyView(frame: NSRect(origin: .zero, size: spriteSize))
+        }
+        newView.onClick = { [weak self] in self?.characterClicked() }
+
+        self.view = newView
+        
+        self.window.contentView = newView
+        
+        /*
+        // Reset internal state for the new character
+        self.pos = .zero
+        self.vel = .zero
+        self.facing = 1
+        self.alpha = 1
+        self.sitting = true
+        self.sitInPlace = true
+        self.noChaseUntil = CACurrentMediaTime() + 1.0
+        
+        // Configure view for waiting pose
+        self.view.mouthOpen = 0
+        self.view.lookUp = 0
+        self.view.petting = false
+        self.view.showPointer = false
+        self.view.pose = .sit
+        
+        self.enter(.chasing)
+        */
+        spawn(near: NSEvent.mouseLocation)
     }
 
     // MARK: Helpers
@@ -190,7 +232,7 @@ final class CharacterController: NSObject {
         }
     }
 
-    private func kittyClicked() {
+    private func characterClicked() {
         guard isClickable else { return }
         releaseCursor()
         lastPointer = NSEvent.mouseLocation
@@ -391,9 +433,8 @@ final class CharacterController: NSObject {
             pos.y += dt * 25
             if alpha <= 0 {
                 window.orderOut(nil)
-                window.ignoresMouseEvents = true
-                NSApp.terminate(nil) // unless set to respawn
-                return
+                enter(.gone)
+                respawnDelay = respawnLater ? 10 : 0
             }
         }
 
